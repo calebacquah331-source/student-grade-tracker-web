@@ -1,0 +1,248 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Grade Tracker</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 25px 15px;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    header {
+      background: #142b4a;
+      color: white;
+      text-align: center;
+      padding: 28px 15px;
+      border-radius: 14px;
+      margin-bottom: 22px;
+    }
+
+    header p { color: #cbd5e1; }
+
+    .card {
+      background: white;
+      padding: 22px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 3px 12px #0000000a;
+    }
+
+    .form, .tools {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    input, button {
+      padding: 12px;
+      border-radius: 7px;
+      font-size: 15px;
+    }
+
+    input {
+      border: 1px solid #cbd5e1;
+      flex: 1;
+      min-width: 130px;
+    }
+
+    button {
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover { opacity: 0.88; }
+    .delete { background: #dc2626; }
+    .secondary { background: #475569; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat {
+      background: #eff6ff;
+      padding: 15px;
+      border-radius: 9px;
+    }
+
+    .stat span {
+      display: block;
+      font-size: 25px;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      text-align: left;
+      padding: 12px 8px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    th { background: #eff6ff; }
+    #message { color: #166534; }
+    footer { text-align: center; color: #64748b; padding: 15px; }
+  </style>
+</head>
+
+<body>
+<div class="container">
+  <header>
+    <h1>Student Grade Tracker</h1>
+    <p>Manage student scores and monitor class performance</p>
+  </header>
+
+  <section class="card">
+    <h2>Add a Student</h2>
+    <form class="form" id="studentForm">
+      <input id="name" placeholder="Student name" required>
+      <input id="score" type="number" placeholder="Score (0–100)"
+             min="0" max="100" required>
+      <button type="submit">Add Student</button>
+    </form>
+
+    <div class="stats">
+      <div class="stat">Total Students<span id="count">0</span></div>
+      <div class="stat">Class Average<span id="average">0</span></div>
+      <div class="stat">Highest Score<span id="highest">0</span></div>
+    </div>
+
+    <div class="tools">
+      <input id="search" placeholder="Search by student name">
+      <button id="sort" type="button">Sort by Score</button>
+      <button id="reset" class="secondary" type="button">Reset Demo</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Score</th>
+            <th>Grade</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="studentList"></tbody>
+      </table>
+    </div>
+
+    <p id="message" aria-live="polite"></p>
+  </section>
+
+  <footer>Student Grade Tracker</footer>
+</div>
+
+<script>
+  const demoStudents = [
+    { name: "Ama", score: 85 },
+    { name: "Kojo", score: 72 },
+    { name: "Abena", score: 93 }
+  ];
+
+  let students = [...demoStudents];
+  let descending = true;
+
+  function getGrade(score) {
+    if (score >= 80) return "A";
+    if (score >= 70) return "B";
+    if (score >= 60) return "C";
+    if (score >= 50) return "D";
+    return "F";
+  }
+
+  function render() {
+    const query = document.getElementById("search").value.toLowerCase();
+    const matches = students.filter(student =>
+      student.name.toLowerCase().includes(query)
+    );
+
+    document.getElementById("studentList").innerHTML = matches.map(student => {
+      const index = students.indexOf(student);
+      return `
+        <tr>
+          <td>${escapeHTML(student.name)}</td>
+          <td>${student.score}</td>
+          <td>${getGrade(student.score)}</td>
+          <td><button class="delete" onclick="removeStudent(${index})">Delete</button></td>
+        </tr>`;
+    }).join("");
+
+    const total = students.reduce((sum, student) => sum + student.score, 0);
+    document.getElementById("count").textContent = students.length;
+    document.getElementById("average").textContent =
+      students.length ? (total / students.length).toFixed(1) : "0";
+    document.getElementById("highest").textContent =
+      students.length ? Math.max(...students.map(s => s.score)) : "0";
+  }
+
+  function escapeHTML(value) {
+    return value.replace(/[&<>"']/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;",
+      '"': "&quot;", "'": "&#39;"
+    }[char]));
+  }
+
+  function removeStudent(index) {
+    students.splice(index, 1);
+    render();
+    document.getElementById("message").textContent = "Student removed.";
+  }
+
+  document.getElementById("studentForm").addEventListener("submit", event => {
+    event.preventDefault();
+    const name = document.getElementById("name").value.trim();
+    const score = Number(document.getElementById("score").value);
+
+    if (!name || score < 0 || score > 100) {
+      document.getElementById("message").textContent =
+        "Enter a valid name and a score between 0 and 100.";
+      return;
+    }
+
+    students.push({ name, score });
+    event.target.reset();
+    document.getElementById("message").textContent = "Student added.";
+    render();
+  });
+
+  document.getElementById("search").addEventListener("input", render);
+
+  document.getElementById("sort").addEventListener("click", () => {
+    students.sort((a, b) =>
+      descending ? b.score - a.score : a.score - b.score
+    );
+    descending = !descending;
+    render();
+  });
+
+  document.getElementById("reset").addEventListener("click", () => {
+    students = [...demoStudents];
+    document.getElementById("search").value = "";
+    document.getElementById("message").textContent = "Demo data restored.";
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>
